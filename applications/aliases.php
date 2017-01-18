@@ -1,7 +1,7 @@
 <?php
 return [
     '4u.dev' => '4u.plus',
-    '4you.hu' => '4u.plus',
+    '4you.plus' => '4u.plus',
     'hungary.com.ru' => '4u.plus',
     'pannon.ru' => '4u.plus',
     'spirro.ru' => '4u.plus',

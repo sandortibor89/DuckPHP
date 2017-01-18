@@ -1,6 +1,8 @@
 <?php
 namespace core;
 
-class Controller extends Auth {
-    
+if (class_exists('\model\Authentication')) {
+    class Controller extends \model\Authentication {}
+} else {
+    class Controller {}
 }

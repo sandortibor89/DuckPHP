@@ -143,7 +143,7 @@ $config = [
     'mysql_cache_time'      => 5,
     'default_cache_time'    => 86400, //1 hour: 3600, 1 day: 86400
     'google_maps_api_key'   => 'g00g13_k3y',
-    'secret_key'            => 's3cr3t_k3y'
+    'secret_key'            => 's3cr3t_k3y',
 ];
 
 $public_config_file = APP_PUBLIC_DIR.DS.'config.php';
