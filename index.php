@@ -193,9 +193,6 @@ spl_autoload_register(function ($class) {
 });
 
 $class_alias = [
-    'helper' => [
-        'Auth' => 'core'
-    ],
     'core' => [
         'Router' => ['Router','helper','model'],
         'Language' => 'model',
