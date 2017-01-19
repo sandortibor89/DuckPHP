@@ -87,7 +87,7 @@ class Load {
         foreach ($matches as $v) {
             $var = $variables;
             foreach (explode('->', $v[1]) as $key) {
-                if (array_key_exists($key, $var)) {
+                if (array_key_exists($key, $var ?? [])) {
                     $var = $var[$key];
                 } else {
                     $var = null;

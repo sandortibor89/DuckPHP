@@ -140,8 +140,9 @@ $config = [
     'mysql_database'        => null,
     'mysql_charset'         => null,
     'mysql_cache'           => true,
-    'mysql_cache_time'      => 5,
-    'default_cache_time'    => 86400, //1 hour: 3600, 1 day: 86400
+    'mysql_cache_time'      => 3600, //1 hour
+    'default_cache_time'    => 86400, //1 day
+    'default_cookie_time'   => 86400, //1 day
     'google_maps_api_key'   => 'g00g13_k3y',
     'secret_key'            => 's3cr3t_k3y',
 ];

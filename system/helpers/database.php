@@ -152,7 +152,7 @@ class Database extends DatabaseConnection {
                 $result_array = $result_array ?? [];
             }
         }
-        return ($all) ? $result_array : (($result_array) ? reset($result_array) : $result_array);
+        return ($all) ? $result_array : (($result_array) ? ((count($r = reset($result_array)) === 1) ? reset($r) : $r) : $result_array);
     }
     
     public function getAll() {

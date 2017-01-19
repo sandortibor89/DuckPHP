@@ -3,7 +3,7 @@ namespace helper;
 
 class Crypt {
     
-    private $instance, $secret_key;
+    private $secret_key;
     
 	public function __construct() {
         $this -> secret_key = SECRET_KEY;
@@ -13,16 +13,14 @@ class Crypt {
     }
     
 	public function encrypt(string $str) : string {
-        self::getInstance();
-        $key = self::$secret_key;
-        $encoded = base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, md5($key), $str, MCRYPT_MODE_CBC, md5(md5($key))));
+        $key = $this -> secret_key;
+        $encoded = base64_encode(@mcrypt_encrypt(MCRYPT_RIJNDAEL_256, md5($key), $str, MCRYPT_MODE_CBC, md5(md5($key))));
         return $encoded;
     }
     
 	public function decrypt(string $str) : string {
-        self::getInstance();
-        $key = self::$secret_key;
-        $decoded = rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, md5($key), base64_decode($str), MCRYPT_MODE_CBC, md5(md5($key))), "\0");
+        $key = $this -> secret_key;
+        $decoded = rtrim(@mcrypt_decrypt(MCRYPT_RIJNDAEL_256, md5($key), base64_decode($str), MCRYPT_MODE_CBC, md5(md5($key))), "\0");
         return $decoded;
     }
     

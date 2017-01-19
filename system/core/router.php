@@ -76,7 +76,7 @@ class Router {
     public static function url(string $url = null) : string {
         if (is_null($url) || empty($url)) {
             $url = implode('/', array_filter([
-                self::$language,
+                ((self::$language == LANGUAGE) ? '' : self::$language),
                 ((self::$controller == DEFAULT_CONTROLLER) ? '' : self::$controller),
                 ((self::$method == DEFAULT_METHOD) ? '' : self::$method),
                 ((empty(self::$params)) ? '' : implode('/', self::$params)),
@@ -107,6 +107,13 @@ class Router {
             }
         }
         return implode('/', [DOMAIN, trim(preg_replace('/\/+/', '/', $url), '/')]);
+    }
+    
+    public static function redirect(string $url = null) {
+        $url = self::url($url);
+        if ($url != self::url()) {
+            header("Location: $url");
+        }
     }
     
     public static function info() : array {
