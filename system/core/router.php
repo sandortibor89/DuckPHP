@@ -143,7 +143,8 @@ class Router {
     
     public static function __callStatic($name, $arguments) {
         $name = self::alias($name);
-        return self::$$name;
+        $string = (reset($arguments)) ? reset($arguments) : null;
+        return is_null($string) ? self::$$name : ($string == self::$$name);
     }
 
 }
