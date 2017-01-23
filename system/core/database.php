@@ -28,29 +28,29 @@ class Database {
         return true;
     }
     
-    private function format(string $string = null, bool $as = false) : string {
-        if (!is_null($string)) {
-            $explode = explode('.', $string, 2);
-            if ($as && count($explode) === 2) {
-                $string = '`'.end($explode).'` As `'.reset($explode).'`';
-            } else {
-                $string = '`'.reset($explode).'`'.(count($explode) === 2 ? '.`'.end($explode).'`' : '');
-            }
-        }
-        return $string ?? '';
-    }
-    // lehetne akár egy függvény is a kettő
-    private function formatArrayToString(array $array) : string {
+    private function formatToSqlStr($strorarray, bool $as = false) : string {
+        //lehet tömb vagy string, kulcsokat vagy táblát alakít át sql formában. első pont mentén aliasokra bont.
+        $array = is_array($strorarray) ? $strorarray : [$strorarray];
         $cbefore = count($array);
-        $walk = array_walk($array, function(&$value) {
-            $value = (is_string($value) && strlen($value) > 0) ? "`".trim($value , " \t\n\r\0\x0B'\"")."`" : null;
+        $walk = array_walk($array, function(&$value) use($as) {
+            if (is_string($value) && strlen($value) > 0) {
+                $explode = explode('.', trim($value , " \t\n\r\0\x0B'\""), 2);
+                if ($as && count($explode) === 2) {
+                    $value = '`'.end($explode).'` As `'.reset($explode).'`';
+                } else {
+                    $value = '`'.reset($explode).'`'.(count($explode) === 2 ? '.`'.end($explode).'`' : '');
+                }
+            } else {
+                $value = null;
+            }
         });
         $array = array_filter($array);
         $cafter = count($array);
         return ($cbefore === $cafter && $cafter > 0 && $walk) ? implode(",", $array) : '';
     }
     
-    private function sqlValueFormatToStr($strorarray) : string {
+    private function valueFormatToSqlStr($strorarray) : string {
+        //lehet tömb vagy string, sql kompatibilis értékké alakít, hat tud.
         $array = is_array($strorarray) ? $strorarray : [$strorarray];
         $cbefore = count($array);
         $walk = array_walk($array, function(&$value) {
@@ -69,47 +69,46 @@ class Database {
         return ($cbefore === $cafter && $cafter > 0 && $walk) ? implode(",", $array) : '';
     }
     
+    private function argumentArrayToStr(array $argument, bool $where = false) {
+        $a = array_shift($argument);
+        $b = array_shift($argument);
+        $c = array_shift($argument);
+        if (is_null($c)) { $c = $b; $b = '='; }
+        if (preg_match("/\A\s*(not|in)\s*\z/i", $b, $m)) {
+            $not = (strtolower($m[1]) === "not") ? " Not" : "";
+            return $this -> formatToSqlStr($a)."$not In(".$this -> valueFormatToSqlStr($c).")";
+        } else {
+            return $this -> formatToSqlStr($a)." $b ".(($where) ? $this -> valueFormatToSqlStr($c) : $this -> formatToSqlStr($c));
+        }
+    }
+    
     private function recursiveFormat(array $array, bool $where = false) : string {
+        if ($this -> isArgument($array)) {
+            return $this -> argumentArrayToStr($array, $where);
+        }
         $return = [];
         foreach ($array as $k => $v) {
             if (is_string($v)) {
-                if (preg_match("/\A\s*(or|and)\s*\z/i", $v) && 
+                if (preg_match("/\A\s*(or|and)\s*\z/i", $v, $m) && 
                     count($return) > 0 && 
                     !preg_match("/\A\s*(or|and)\s*\z/i", end($return))) {
-                    $return[] = ucfirst(strtolower($v));
+                    $return[] = ucfirst(strtolower($m[1]));
                 }
             } elseif ($this -> isArgument($v)) {
-                $a = array_shift($v);
-                $b = array_shift($v);
-                $c = array_shift($v);
-                if (is_null($c)) { $c = $b; $b = '='; }
-                if (count($return) > 0 && !preg_match("/\A\s*(or|and)\s*\z/i", end($return))) {
-                    $return[] = 'And';
-                }
-                if (preg_match("/\A\s*(in)\s*\z/i", $b)) {
-                    $c = '"'.implode('","', $c).'"';
-                    $return[] = $this -> format($a).' In('.$c.')';
-                } elseif (preg_match("/\A\s*(not)\s*\z/i", $b)) {
-                    $c = '"'.implode('","', $c).'"';
-                    $return[] = $this -> format($a).' Not In('.$c.')';
-                } else {
-                    $return[] = $this -> format($a).' '.$b.' '.(($where) ? '"'.$c.'"' : $this -> format($c));
-                    
-                }
+                if (count($return) > 0 && !preg_match("/\A\s*(or|and)\s*\z/i", end($return))) { $return[] = "And"; }
+                $return[] = $this -> argumentArrayToStr($v, $where);
             } else {
-                if (count($return) > 0 && !preg_match("/\A\s*(or|and)\s*\z/i", end($return))) {
-                    $return[] = 'And';
-                }
-                $return[] = '('.$this -> recursiveFormat($v, $where).')';
+                if (count($return) > 0 && !preg_match("/\A\s*(or|and)\s*\z/i", end($return))) { $return[] = "And"; }
+                $return[] = "(".$this -> recursiveFormat($v, $where).")";
             }
         }
-        
-        return implode(' ',$return);
+        $return = array_filter($return);
+        return count($return) > 0 ? implode(" ", $return) : "";
     }
     
     private function isArgument(array $array) : bool {
         if (count($array) < 2) { return false; }
-        $strtolower = function ($value) { return is_string($value) ? strtolower($value) : $value; };
+        $strtolower = function ($value) { return is_string($value) ? strtolower(trim($value , " \t\n\r\0\x0B'\"")) : $value; };
         if (in_array('or', array_map($strtolower, $array))) { return false; }
         if (in_array('and', array_map($strtolower, $array))) { return false; }
         if (!is_string(reset($array))) { return false; }
@@ -120,7 +119,7 @@ class Database {
         } elseif (count($array) === 2) {
             if (!is_string(reset($array))) { return false; }
             if (strlen(reset($array)) > 2) { return false; }
-            if (!(strtolower(reset($array)) === 'in' && is_array(end($array)))) { return false; }
+            if (!preg_match("/\A\s*(not|in)\s*\z/i", reset($array)) && is_array(end($array))) { return false; }
             /*
             if (is_array(end($array))) {
                 foreach (end($array) as $v) {
@@ -165,10 +164,10 @@ class Database {
     }
     
     private function getTable() : string {
-        $table = $this -> format($this -> table['table'], true);
+        $table = $this -> formatToSqlStr($this -> table['table'], true);
         $this -> table['table'] = null;
         if (strlen($table) < 1) {
-            $table = $this -> format($this -> table['default'], true);
+            $table = $this -> formatToSqlStr($this -> table['default'], true);
             if (strlen($table) < 1) {
                 die("Database table error: Not Set table.");
             }
@@ -256,6 +255,18 @@ class Database {
     
     /* /Insert */
     
+    /* Update */
+    
+    private function setUpdate(array $update) {
+        $this -> update = $update;
+    }
+    
+    private function getUpdate() : string {
+        
+    }
+    
+    /* /Update */
+    
     /* Join */
     
     private function setJoin(array $array) {
@@ -283,19 +294,14 @@ class Database {
     /* Where */
     
     private function setWhere(array $array) {
-        $this -> where[] = $array;
+        $this -> where = $array;
     }
     
     private function getWhere() : string {
         $array = $this -> where ?? [];
-        $this -> where = [];
-        $return = [];
-        foreach ($array as $k => $v) {
-            if (is_array($v)) {
-                $return[] = $this -> recursiveFormat($v, true);
-            }
-        }
-        return 'Where '.implode(' And ', $return);
+        $this -> where = null;
+        $where = $this -> recursiveFormat($array, true);
+        return strlen($where) > 0 ? "Where $where" : "";
     }
     
     /* /Where */

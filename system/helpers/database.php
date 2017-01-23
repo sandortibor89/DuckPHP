@@ -60,6 +60,15 @@ class Database extends DatabaseConnection {
         return $return;
     }
     
+    public function update(array $update) : int {
+        $this -> core -> update = $update;
+        $table = $this -> core -> table;
+        $where = $this -> core -> where;
+        $update = $this -> core -> update;
+        var_dump($where);
+        return 1;
+    }
+    
     public function distinct() : self {
         $this -> query_data['distinct'] = true;
         return $this;
