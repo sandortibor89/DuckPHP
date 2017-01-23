@@ -139,9 +139,9 @@ class Database {
             if (is_array($v)) {
                 $return[] = $this -> recursiveOrder($v);
             } elseif (is_string($k) && preg_match("/\A\s*(asc|desc)\s*\z/i", $v)) {
-                $return[] = $this -> format($k).' '.ucfirst(strtolower($v));
+                $return[] = $this -> formatToSqlStr($k).' '.ucfirst(strtolower($v));
             } elseif (is_string($v) && !is_string($k)) {
-                $return[] = $this -> format($v).' Asc';
+                $return[] = $this -> formatToSqlStr($v).' Asc';
             }
         }
         return implode(', ',$return);
@@ -201,9 +201,9 @@ class Database {
                     $return = array_merge($return, $this -> getSelect($v));
                 } else {
                     if (is_string($k)) {
-                        $return[] = $this -> format($k)." As `$v`";
+                        $return[] = $this -> formatToSqlStr($k)." As `$v`";
                     } else {
-                        $return[] = $this -> format($v);
+                        $return[] = $this -> formatToSqlStr($v);
                     }
                 }
             }
@@ -283,7 +283,7 @@ class Database {
                 foreach ($v as $kk => $vv) {
                     $r[] = $this -> recursiveFormat($vv);
                 }
-                $return[] = 'Inner Join '.$this -> format($k, true).' On '.implode(' And ', $r);
+                $return[] = 'Inner Join '.$this -> formatToSqlStr($k, true).' On '.implode(' And ', $r);
             }
         }
         return $return;
@@ -315,7 +315,7 @@ class Database {
     private function getGroup() : string {
         $group = $this -> group;
         $this -> group = null;
-        return ($group) ? 'Group By '.$this -> format($group) : '';
+        return ($group) ? 'Group By '.$this -> formatToSqlStr($group) : '';
     }
     
     /* /GroupBy */
