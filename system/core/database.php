@@ -262,7 +262,7 @@ class Database {
     }
     
     private function getUpdate() : string {
-        
+        return '';
     }
     
     /* /Update */
