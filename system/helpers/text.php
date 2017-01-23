@@ -21,9 +21,9 @@ class Text {
 		return urlencode(implode($random).((is_null($string)) ? '' : '_'.$string));
 	}
 	
-	public function print_a(array $a = []) {
+	public function print_a(array $a = null) {
 		print '<pre>';
-		print_r($a);
+		print_r($a ?? []);
 		print '</pre>';
 	}
     

@@ -6,31 +6,17 @@ class Database extends DatabaseConnection {
     private $core, $connection, $cache_helper, $mcache, $default, $query_data;
     
     public function __construct(array $params = []) {
-        $this -> default['table'] = $this -> nameExplode($params['table'] ?? null, true);
         $this -> default['cache'] = $params['cache'] ?? MYSQL_CACHE;
         $this -> default['cache_time'] = $params['cache_time'] ?? MYSQL_CACHE_TIME ?? DEFAULT_CACHE_TIME;
         $this -> cache_helper = self::cacheHelper();
         $this -> connection = self::connect();
-        $this -> core = new \core\Database;
-    }
-    
-    private function nameExplode(string $name = null, $as = false) {
-        if (!is_null($name)) {
-            $explode = explode('.', $name, 2);
-            if ($as && end($explode)) {
-                $name = '`'.end($explode).'` As `'.reset($explode).'`';
-            } else {
-                $name = '`'.reset($explode).'`'.(end($explode) ? '.`'.end($explode).'`' : '');
-            }
-        }
-        return $name;
+        $this -> core = new \core\Database($this -> connection);
+        $this -> defaulttable($params['table'] ?? '');
     }
     
     private function execute(string $sql) {
-		$microtime = microtime(true);
 		$return = $this -> connection -> query($sql);
-		$microtime = microtime(true) - $microtime;
-		return ($this -> connection -> error) ? null : $return;
+		return ($this -> connection -> error) ? die("Mysql query error: ".$this -> connection -> error) : $return;
 	}
     
     public function cache(int $time = null) : self {
@@ -49,13 +35,43 @@ class Database extends DatabaseConnection {
         return $this;
     }
     
+    public function insertGetId(array $simple, array $multiple = null) {
+        return $this -> insert($simple,$multiple,true);
+    }
+    
+    public function insert(array $simple, array $multiple = null, bool $getid = false) {
+        $this -> core -> insert = [
+            'simple' => $simple,
+            'multiple' => $multiple,
+            'separate' => $getid
+        ];
+        $table = $this -> core -> table;
+        $insert = $this -> core -> insert;
+        if (is_array($insert)) {
+            $return = [];
+            foreach ($insert as $v) {
+                $this -> execute("Insert Into $table $v");
+                $return[] = $this -> connection -> insert_id;
+            }
+        } else {
+            $this -> execute("Insert Into $table $insert");
+            $return = $this -> connection -> affected_rows;
+        }
+        return $return;
+    }
+    
     public function distinct() : self {
         $this -> query_data['distinct'] = true;
         return $this;
     }
     
-    public function table($table) : self {
-        $this -> query_data['table'] = $this -> nameExplode($table, true);
+    public function defaulttable(string $table) : self {
+        $this -> core -> defaulttable = $table;
+        return $this;
+    }
+    
+    public function table(string $table) : self {
+        $this -> core -> table = $table;
         return $this;
     }
     
@@ -96,20 +112,18 @@ class Database extends DatabaseConnection {
     public function sql(bool $all = false) : string {
         $select = $this -> core -> select;
         if (is_array($select)) {
-            $table = $this -> query_data['table'] ?? $this -> default['table'];
-            if (!is_null($table)) {
-                $sql[] = 'Select';
-                $sql[] = ($this -> query_data['distinct']) ? 'DISTINCT' : null;
-                $sql[] = implode(',', $select);
-                $sql[] = 'From';
-                $sql[] = $table;
-                $sql[] = implode(' ', $this -> core -> join);
-                $sql[] = $this -> core -> where;
-                $sql[] = $this -> core -> group;
-                $sql[] = $this -> core -> order;
-                $sql[] = $this -> core -> limit;
-                $sql = implode(' ', array_filter($sql));
-            }
+            $table = $this -> core -> table;
+            $sql[] = 'Select';
+            $sql[] = ($this -> query_data['distinct']) ? 'DISTINCT' : null;
+            $sql[] = implode(',', $select);
+            $sql[] = 'From';
+            $sql[] = $table;
+            $sql[] = implode(' ', $this -> core -> join);
+            $sql[] = $this -> core -> where;
+            $sql[] = $this -> core -> group;
+            $sql[] = $this -> core -> order;
+            $sql[] = $this -> core -> limit;
+            $sql = implode(' ', array_filter($sql));
         } else {
             $sql = $select;
         }

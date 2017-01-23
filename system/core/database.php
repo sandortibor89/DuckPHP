@@ -3,7 +3,11 @@ namespace core;
 
 class Database {
     
-    private $select, $join, $where, $group, $order, $limit;
+    private $connection, $table, $select, $insert, $join, $where, $group, $order, $limit;
+    
+    public function __construct($connection) {
+        $this -> connection = $connection;
+    }
     
     public function __set($name, $data) {
         call_user_func([$this,'set'.$name], $data);
@@ -27,13 +31,42 @@ class Database {
     private function format(string $string = null, bool $as = false) : string {
         if (!is_null($string)) {
             $explode = explode('.', $string, 2);
-            if ($as && end($explode)) {
+            if ($as && count($explode) === 2) {
                 $string = '`'.end($explode).'` As `'.reset($explode).'`';
             } else {
                 $string = '`'.reset($explode).'`'.(count($explode) === 2 ? '.`'.end($explode).'`' : '');
             }
         }
-        return $string ?? null;
+        return $string ?? '';
+    }
+    // lehetne akár egy függvény is a kettő
+    private function formatArrayToString(array $array) : string {
+        $cbefore = count($array);
+        $walk = array_walk($array, function(&$value) {
+            $value = (is_string($value) && strlen($value) > 0) ? "`".trim($value , " \t\n\r\0\x0B'\"")."`" : null;
+        });
+        $array = array_filter($array);
+        $cafter = count($array);
+        return ($cbefore === $cafter && $cafter > 0 && $walk) ? implode(",", $array) : '';
+    }
+    
+    private function sqlValueFormatToStr($strorarray) : string {
+        $array = is_array($strorarray) ? $strorarray : [$strorarray];
+        $cbefore = count($array);
+        $walk = array_walk($array, function(&$value) {
+            if (is_bool($value)) {
+                $value = (int)$value;
+            } elseif (is_null($value)) {
+                $value = "Null";
+            } elseif (!is_array($value) && strlen($value) > 0) {
+                $value = "\"".$this -> connection -> real_escape_string(trim($value , " \t\n\r\0\x0B'\""))."\"";
+            } else {
+                $value = null;
+            }
+        });
+        $array = array_filter($array);
+        $cafter = count($array);
+        return ($cbefore === $cafter && $cafter > 0 && $walk) ? implode(",", $array) : '';
     }
     
     private function recursiveFormat(array $array, bool $where = false) : string {
@@ -115,6 +148,36 @@ class Database {
         return implode(', ',$return);
     }
     
+    /* Table */
+    
+    private function setDefaulttable(string $table) {
+        $this -> setTable($table, true);
+    }
+    
+    private function setTable(string $table, bool $default = false) {
+        if (is_string($table) && strlen($table) > 0) {
+            if ($default) {
+                $this -> table['default'] = $table;
+            } else {
+                $this -> table['table'] = $table;
+            }
+        }
+    }
+    
+    private function getTable() : string {
+        $table = $this -> format($this -> table['table'], true);
+        $this -> table['table'] = null;
+        if (strlen($table) < 1) {
+            $table = $this -> format($this -> table['default'], true);
+            if (strlen($table) < 1) {
+                die("Database table error: Not Set table.");
+            }
+        }
+        return $table;
+    }
+    
+    /* /table */
+    
     /* Select */
     
     private function setSelect($data) {
@@ -152,6 +215,46 @@ class Database {
     }
     
     /* /Select */
+    
+    /* Insert */
+    
+    private function setInsert(array $array) {
+        $this -> insert = $array;
+    }
+    
+    private function getInsert() {
+        $array = $this -> insert;
+        $this -> insert = null;
+        if (is_null($array['multiple'])) {
+            $keys = $this -> formatArrayToString(array_keys($array['simple']));
+            if (!$keys) { die("Database insert error: keys are not correct."); }
+            $values = $this -> sqlValueFormatToStr($array['simple']);
+            if (!$values) { die("Database insert error: values are not correct."); }
+            if (count($keys) !== count($values)) { die("Database insert error: keys and values count not identical."); }
+            return ($array['separate']) ? ["($keys) Values($values)"] : "($keys) Values($values)";
+        } else {
+            $keys = $this -> formatArrayToString($array['simple']);
+            if (!$keys) { die("Database insert error: keys are not correct."); }
+            $values = [];
+            foreach ($array['multiple'] as $k) {
+                $value = $this -> sqlValueFormatToStr($k);
+                if (!$value) { die("Database insert error: values are not correct."); }
+                if (count($keys) !== count($value)) { die("Database insert error: keys and values count not identical."); }
+                $values[] = $value;
+            }
+            if ($array['separate']) {
+                $return = [];
+                foreach ($values as $v) {
+                    $return[] = "($keys) Values($v)";
+                }
+                return $return;
+            } else {
+                return "($keys) Values(".implode("),(", $values).")";
+            }
+        }
+    }
+    
+    /* /Insert */
     
     /* Join */
     
