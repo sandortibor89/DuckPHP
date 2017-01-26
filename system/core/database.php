@@ -3,7 +3,7 @@ namespace core;
 
 class Database {
     
-    private $connection, $table, $select, $insert, $join, $where, $group, $order, $limit;
+    private $connection, $table, $select, $insert, $update, $join, $where, $group, $order, $limit;
     
     public function __construct($connection) {
         $this -> connection = $connection;
@@ -28,7 +28,7 @@ class Database {
         return true;
     }
     
-    private function formatToSqlStr($strorarray, bool $as = false) : string {
+    private function formatToSqlStr($strorarray, bool $as = false, bool $return_array = false) {
         //lehet tömb vagy string, kulcsokat vagy táblát alakít át sql formában. első pont mentén aliasokra bont.
         $array = is_array($strorarray) ? $strorarray : [$strorarray];
         $cbefore = count($array);
@@ -44,12 +44,14 @@ class Database {
                 $value = null;
             }
         });
-        $array = array_filter($array);
+        $array = array_filter($array, function($v) {
+            return !is_null($v);
+        });
         $cafter = count($array);
-        return ($cbefore === $cafter && $cafter > 0 && $walk) ? implode(",", $array) : '';
+        return ($cbefore === $cafter && $cafter > 0 && $walk) ? (($return_array) ? $array : implode(",", $array)) : false;
     }
     
-    private function valueFormatToSqlStr($strorarray) : string {
+    private function valueFormatToSqlStr($strorarray, bool $return_array = false) {
         //lehet tömb vagy string, sql kompatibilis értékké alakít, hat tud.
         $array = is_array($strorarray) ? $strorarray : [$strorarray];
         $cbefore = count($array);
@@ -58,15 +60,17 @@ class Database {
                 $value = (int)$value;
             } elseif (is_null($value)) {
                 $value = "Null";
-            } elseif (!is_array($value) && strlen($value) > 0) {
+            } elseif (!is_array($value) && strlen($value) >= 0) {
                 $value = "\"".$this -> connection -> real_escape_string(trim($value , " \t\n\r\0\x0B'\""))."\"";
             } else {
                 $value = null;
             }
         });
-        $array = array_filter($array);
+        $array = array_filter($array, function($v) {
+            return !is_null($v);
+        });
         $cafter = count($array);
-        return ($cbefore === $cafter && $cafter > 0 && $walk) ? implode(",", $array) : '""';
+        return ($cbefore === $cafter && $cafter > 0 && $walk) ? (($return_array) ? $array : implode(",", $array)) : false;
     }
     
     private function argumentArrayToStr(array $argument, bool $where = false) {
@@ -224,20 +228,21 @@ class Database {
         $array = $this -> insert;
         $this -> insert = null;
         if (is_null($array['multiple'])) {
-            $keys = $this -> formatArrayToString(array_keys($array['simple']));
+            $keys = $this -> formatToSqlStr(array_keys($array['simple']));
             if (!$keys) { die("Database insert error: keys are not correct."); }
-            $values = $this -> sqlValueFormatToStr($array['simple']);
+            $values = $this -> valueFormatToSqlStr($array['simple']);
             if (!$values) { die("Database insert error: values are not correct."); }
-            if (count($keys) !== count($values)) { die("Database insert error: keys and values count not identical."); }
+            //jelen esetben felesleges összehasonlítani mert két string jön vissza
+            //if (count($keys) !== count($values)) { die("Database insert error: keys and values count not identical."); }
             return ($array['separate']) ? ["($keys) Values($values)"] : "($keys) Values($values)";
         } else {
-            $keys = $this -> formatArrayToString($array['simple']);
+            $keys = $this -> formatToSqlStr($array['simple']);
             if (!$keys) { die("Database insert error: keys are not correct."); }
             $values = [];
             foreach ($array['multiple'] as $k) {
-                $value = $this -> sqlValueFormatToStr($k);
+                $value = $this -> valueFormatToSqlStr($k);
                 if (!$value) { die("Database insert error: values are not correct."); }
-                if (count($keys) !== count($value)) { die("Database insert error: keys and values count not identical."); }
+                //if (count($keys) !== count($value)) { die("Database insert error: keys and values count not identical."); }
                 $values[] = $value;
             }
             if ($array['separate']) {
@@ -261,7 +266,19 @@ class Database {
     }
     
     private function getUpdate() : string {
-        return '';
+        $update = $this -> update;
+        $this -> update = null;
+        $keys = $this -> formatToSqlStr(array_keys($update), false, true);
+        if (!$keys) { die("Database update error: keys are not correct."); }
+        $values = $this -> valueFormatToSqlStr($update, true);
+        if (!$values) { die("Database update error: values are not correct."); }
+        if (count($keys) !== count($values)) { die("Database update error: keys and values count not identical."); }
+        $return = [];
+        for ($i = 0; $i < count($keys); $i++) {
+            $return[] = array_shift($keys)."=".array_shift($values);
+        }
+        $return = array_filter($return);
+        return (count($return) > 0) ? implode(",", $return) : die("Database update error: empty update values.");
     }
     
     /* /Update */

@@ -65,8 +65,9 @@ class Database extends DatabaseConnection {
         $table = $this -> core -> table;
         $where = $this -> core -> where;
         $update = $this -> core -> update;
-        var_dump($where);
-        return 1;
+        $this -> execute("Update $table Set $update $where");
+        $return = $this -> connection -> affected_rows;
+        return $return;
     }
     
     public function distinct() : self {
