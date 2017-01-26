@@ -1,3 +1,3 @@
-# Voyager-Framework
+# DuckPHP
 PHP 7 Framework
 Coming soon...
