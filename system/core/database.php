@@ -66,7 +66,7 @@ class Database {
         });
         $array = array_filter($array);
         $cafter = count($array);
-        return ($cbefore === $cafter && $cafter > 0 && $walk) ? implode(",", $array) : '';
+        return ($cbefore === $cafter && $cafter > 0 && $walk) ? implode(",", $array) : '""';
     }
     
     private function argumentArrayToStr(array $argument, bool $where = false) {
@@ -113,7 +113,6 @@ class Database {
         if (in_array('and', array_map($strtolower, $array))) { return false; }
         if (!is_string(reset($array))) { return false; }
         $array = is_array($a = array_shift($array)) ? $a : [$a];
-        
         if (count($array) === 1) {
             if (is_array(reset($array))) { return false; }
         } elseif (count($array) === 2) {
