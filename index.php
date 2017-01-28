@@ -47,6 +47,8 @@ if (defined('_DOMAIN')) {
 
 $dirs_check = [];
 
+define('BACKUPS_DIR', ROOT_DIR.DS.'backups');
+$dirs_check[] = BACKUPS_DIR;
 define('DOMAIN', PROTOCOL.SHH.((!empty(WORKING_DIR)) ? '/'.WORKING_DIR : ''));
 define('APPS_URL', DOMAIN.'/applications');
 define('APP_DIR', APPS_DIR.DS._DOMAIN);
