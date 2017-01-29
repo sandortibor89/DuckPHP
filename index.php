@@ -5,7 +5,7 @@
 define('FW_PHP_VERSION', '7.1');
 
 if (version_compare(PHP_VERSION, FW_PHP_VERSION, '<')) {
-    die('Upgrade your PHP version ('.PHP_VERSION.') to '.FW_PHP_VERSION.' or newer!');
+	die('Upgrade your PHP version ('.PHP_VERSION.') to '.FW_PHP_VERSION.' or newer!');
 }
 
 define('ROOT_DIR', __DIR__);
@@ -29,18 +29,18 @@ $sd_size = sizeof($sd);
 
 for($i = 1; $i <= $sd_size; $i++) {
 	$domain = array_slice($sd, $sd_size-$i, $sd_size);
-    $domain = implode('.', $domain);
-    $subdomains = null;
-    $subdomains = ($domain != SHH) ? str_replace('.'.$domain, '', SHH) : null;
-    $domain = in_array($domain, array_keys($aliases)) ? $aliases[$domain] : $domain;
-    if (file_exists($app_dir = APPS_DIR.DS.$domain)) {
-        define('_DOMAIN', $domain);
-        break;
-    }
+	$domain = implode('.', $domain);
+	$subdomains = null;
+	$subdomains = ($domain != SHH) ? str_replace('.'.$domain, '', SHH) : null;
+	$domain = in_array($domain, array_keys($aliases)) ? $aliases[$domain] : $domain;
+	if (file_exists($app_dir = APPS_DIR.DS.$domain)) {
+		define('_DOMAIN', $domain);
+		break;
+	}
 }
 
 if (defined('_DOMAIN')) {
-    define('SUBDOMAINS', $subdomains);
+	define('SUBDOMAINS', $subdomains);
 } else {
 	die('The application directory ('.$app_dir.') does not exist!');
 }
@@ -125,28 +125,28 @@ $dirs_check[] = APP_PLUGINS_DIR;
 define('APP_PLUGINS_URL', APP_ASSETS_URL.'/plugins');
 
 foreach ($dirs_check as $v) {
-    if (!is_dir($v)) {
-        mkdir($v, 0700, true);
-    }
+	if (!is_dir($v)) {
+		mkdir($v, 0700, true);
+	}
 }
 
 $config = [
-    'error_reporting'       => true,
-    'default_timezone'      => 'Europe/Budapest',
-    'default_language'      => 'hu',
-    'default_controller'    => 'welcome',
-    'default_method'        => 'index',
-    'mysql_host'            => null,
-    'mysql_username'        => null,
-    'mysql_password'        => null,
-    'mysql_database'        => null,
-    'mysql_charset'         => null,
-    'mysql_cache'           => true,
-    'mysql_cache_time'      => 3600, //1 hour
-    'default_cache_time'    => 86400, //1 day
-    'default_cookie_time'   => 86400, //1 day
-    'google_maps_api_key'   => 'g00g13_k3y',
-    'secret_key'            => 's3cr3t_k3y',
+	'error_reporting'		=> true,
+	'default_timezone'		=> 'Europe/Budapest',
+	'default_language'		=> 'hu',
+	'default_controller'	=> 'welcome',
+	'default_method'		=> 'index',
+	'mysql_host'			=> null,
+	'mysql_username'		=> null,
+	'mysql_password'		=> null,
+	'mysql_database'		=> null,
+	'mysql_charset'			=> null,
+	'mysql_cache'			=> true,
+	'mysql_cache_time'		=> 3600, //1 hour
+	'default_cache_time'	=> 86400, //1 day
+	'default_cookie_time'	=> 86400, //1 day
+	'google_maps_api_key'	=> 'g00g13_k3y',
+	'secret_key'			=> 's3cr3t_k3y',
 ];
 
 $public_config_file = APP_PUBLIC_DIR.DS.'config.php';
@@ -154,24 +154,13 @@ $public_config = [];
 $app_config_file = APP_SUB_DIR.DS.'config.php';
 $app_config = [];
 
-if (file_exists($app_config_file)) {
-    $app_config = require_once($app_config_file);
-}
-
-if (file_exists($public_config_file)) {
-    $public_config = require_once($public_config_file);
-}
-
-if (is_array($public_config) && count($public_config) > 0) {
-    $config = array_merge($config, $public_config);
-}
-
-if (is_array($app_config) && count($app_config) > 0) {
-    $config = array_merge($config, $app_config);
-}
+if (file_exists($app_config_file))							{ $app_config = require_once($app_config_file); }
+if (file_exists($public_config_file))						{ $public_config = require_once($public_config_file); }
+if (is_array($public_config) && count($public_config) > 0)	{ $config = array_merge($config, $public_config); }
+if (is_array($app_config) && count($app_config) > 0)		{ $config = array_merge($config, $app_config); }
 
 foreach ($config as $k => $v) {
-    define(strtoupper($k), $v);
+	define(strtoupper($k), $v);
 }
 
 if (ERROR_REPORTING) {
@@ -189,38 +178,36 @@ spl_autoload_register(function ($class) {
 	$namespace = reset($explode);
 	$class = end($explode);
 	$directory = (in_array($namespace, array('core', 'helper'))) ? ROOT_DIR.DS.(($namespace == 'core') ? 'system'.DS.$namespace : 'system'.DS.$namespace.'s') : (($namespace == 'publicmodel') ? APP_PUBLIC_DIR.DS.'models' : APP_SUB_DIR.DS.$namespace.(($namespace == 'ajax') ? '' : 's'));
-    $_class = $directory.DS.strtolower($class).'.php';
-    if(file_exists($_class)) {
-        require_once($_class);
-    }
+	$_class = $directory.DS.strtolower($class).'.php';
+	if(file_exists($_class)) { require_once($_class); }
 });
 
 $class_alias = [
-    'core' => [
-        'Router' => ['Router','helper','model','controller'],
-        'Language' => 'model',
-        'Helper' => ['helper','controller','publicmodel','model'],
-        'Controller' => 'controller',
-        'Publicmodel' => ['publicmodel','model','controller'],
-        'Model' => ['model','controller'],
-        'View' => 'controller',
-        'DatabaseConnection' => 'helper'
-    ]
+	'core' => [
+		'Router'				=> ['Router','helper','model','controller'],
+		'Language'				=> 'model',
+		'Helper'				=> ['helper','controller','publicmodel','model'],
+		'Controller'			=> 'controller',
+		'Publicmodel'			=> ['publicmodel','model','controller'],
+		'Model'					=> ['model','controller'],
+		'View'					=> 'controller',
+		'DatabaseConnection'	=> 'helper'
+	]
 ];
 
 foreach ($class_alias as $k => $v) {
-    $alias_original_1 = '\\'.$k.'\\';
-    foreach ($v as $kk => $vv) {
-        $alias_original_2 = $alias_original_1.$kk;
-        $vv = (is_array($vv)) ? $vv : [$vv];
-        foreach ($vv as $vvv) {
-            if ($kk == $vvv) {
-                class_alias($alias_original_2, $kk);
-            } else {
-                class_alias($alias_original_2, '\\'.$vvv.'\\'.$kk);
-            }
-        }
-    }
+	$alias_original_1 = '\\'.$k.'\\';
+	foreach ($v as $kk => $vv) {
+		$alias_original_2 = $alias_original_1.$kk;
+		$vv = (is_array($vv)) ? $vv : [$vv];
+		foreach ($vv as $vvv) {
+			if ($kk == $vvv) {
+				class_alias($alias_original_2, $kk);
+			} else {
+				class_alias($alias_original_2, '\\'.$vvv.'\\'.$kk);
+			}
+		}
+	}
 }
 
 Router::init();
