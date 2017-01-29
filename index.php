@@ -28,7 +28,7 @@ $sd = explode('.', SHH);
 $sd_size = sizeof($sd);
 
 for($i = 1; $i <= $sd_size; $i++) {
-    $domain = array_slice($sd, $sd_size-$i, $sd_size);
+	$domain = array_slice($sd, $sd_size-$i, $sd_size);
     $domain = implode('.', $domain);
     $subdomains = null;
     $subdomains = ($domain != SHH) ? str_replace('.'.$domain, '', SHH) : null;
