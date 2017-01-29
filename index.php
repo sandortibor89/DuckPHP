@@ -154,8 +154,24 @@ $public_config = [];
 $app_config_file = APP_SUB_DIR.DS.'config.php';
 $app_config = [];
 
-if (file_exists($app_config_file))							{ $app_config = require_once($app_config_file); }
-if (file_exists($public_config_file))						{ $public_config = require_once($public_config_file); }
+function createFile(string $filename, string $content) {
+	$file = fopen($filename, "w") or die("Unable to open file!");
+	fwrite($file, $content);
+	fclose($file);
+}
+
+if (file_exists($app_config_file)) {
+	$app_config = require_once($app_config_file);
+} else {
+	createFile($app_config_file, "<?php\nreturn ".var_export($config, true).";");
+}
+
+if (file_exists($public_config_file)) {
+	$public_config = require_once($public_config_file);
+} else {
+	createFile($public_config_file, "<?php\nreturn ".var_export($config, true).";");
+}
+
 if (is_array($public_config) && count($public_config) > 0)	{ $config = array_merge($config, $public_config); }
 if (is_array($app_config) && count($app_config) > 0)		{ $config = array_merge($config, $app_config); }
 

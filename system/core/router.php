@@ -2,30 +2,30 @@
 namespace core;
 
 class Router {
-    
-    private static $instance, $language, $controller, $method, $params, $gets;
-    
-    private static function getInstance() : self {
+
+	private static $instance, $language, $controller, $method, $params, $gets;
+
+	private static function getInstance() : self {
 		if (is_null(self::$instance)) {
-            self::$instance = new self();
-        }	
+			self::$instance = new self();
+		}
 		return self::$instance;
 	}
-    
-    public function __construct() {
-        Language::init();
-        $route = explode('/', trim(current(explode('?', preg_replace('/'.str_replace('/', '\/',WORKING_DIR).'/', '', SRU, 1))), '/'));
-        $route_index_start = (isset($route[0]) && in_array($route[0], Language::getAll())) ? 1 : 0;
-        self::$language = ($route_index_start === 0) ? LANGUAGE : $route[0];
-        self::$controller = (isset($route[$route_index_start]) && !empty($route[$route_index_start])) ? $route[$route_index_start] : DEFAULT_CONTROLLER;
-        self::$method = (isset($route[$route_index_start+1]) && !empty($route[$route_index_start+1])) ? $route[$route_index_start+1] : DEFAULT_METHOD;
-        self::$params = [];
+
+	public function __construct() {
+		Language::init();
+		$route = explode('/', trim(current(explode('?', preg_replace('/'.str_replace('/', '\/',WORKING_DIR).'/', '', SRU, 1))), '/'));
+		$route_index_start = (isset($route[0]) && in_array($route[0], Language::getAll())) ? 1 : 0;
+		self::$language = ($route_index_start === 0) ? LANGUAGE : $route[0];
+		self::$controller = (isset($route[$route_index_start]) && !empty($route[$route_index_start])) ? $route[$route_index_start] : DEFAULT_CONTROLLER;
+		self::$method = (isset($route[$route_index_start+1]) && !empty($route[$route_index_start+1])) ? $route[$route_index_start+1] : DEFAULT_METHOD;
+		self::$params = [];
 		for($i = $route_index_start+2; $i < sizeof($route); $i++) {
-            self::$params[] = $route[$i];
-        }
+			self::$params[] = $route[$i];
+		}
 		self::$gets = $_GET;
-    }
-    
+	}
+
     public static function init() {
         self::getInstance();
         $controller = APP_CONTROLLERS_DIR.DS.strtolower(self::replace('controller')).'.php';
@@ -65,14 +65,17 @@ class Router {
 			self::$params = array_merge($params, self::$params);
 			return self::init();
         } else {
-            die('Controller: "'.self::$controller.'" ('.$controller.') does not exist.');
+			$file = fopen($controller, "w") or die("Unable to open file!");
+			fwrite($file, "<?php\nnamespace controller;\n\nclass Welcome extends controller {\n\n\tpublic function index() {\n\t\tRouter::info(true);\n\t}\n\n}");
+			fclose($file);
+            return self::init();
         }
     }
-    
+
     private static function replace(string $var) : string {
 		return preg_replace('/[^a-zA-Z0-9]+/', '', self::$$var);
 	}
-    
+
     public static function url(string $url = null) : string {
         if (is_null($url) || empty($url)) {
             $url = implode('/', array_filter([
@@ -96,10 +99,10 @@ class Router {
                     case 'method' :
                         $replace = (self::$method == DEFAULT_METHOD) ? '' : self::$method;
                         break;
-                    case 'params' : 
+                    case 'params' :
                         $replace = (empty(self::$params)) ? '' : implode('/', self::$params);
                         break;
-                    case 'gets' : 
+                    case 'gets' :
                         $replace = (empty(self::$gets)) ? '' : '?'.http_build_query(self::$gets);
                         break;
                 }
@@ -108,24 +111,29 @@ class Router {
         }
         return implode('/', [DOMAIN, trim(preg_replace('/\/+/', '/', $url), '/')]);
     }
-    
+
     public static function redirect(string $url = null) {
         $url = self::url($url);
         if ($url != self::url()) {
             header("Location: $url");
         }
     }
-    
-    public static function info() : array {
-		return [
+
+    public static function info(bool $print = false) : array {
+		$return = [
 			'Language' => self::$language,
 			'Controller' => self::$controller,
 			'Method' => self::$method,
 			'Parameters' => self::$params,
 			'GET parameters' => self::$gets
 		];
+		if ($print) {
+			$t = Helper::text();
+			$t -> print_a($return);
+		}
+		return $return;
 	}
-    
+
     private static function alias(string $alias) : string {
         $aliases = [
             'language' => ['l', 'lang'],
@@ -140,7 +148,7 @@ class Router {
         }
         return $aliases[$alias];
     }
-    
+
     public static function __callStatic($name, $arguments) {
         $name = self::alias($name);
         $string = (reset($arguments)) ? reset($arguments) : null;
