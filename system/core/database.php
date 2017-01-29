@@ -2,21 +2,21 @@
 namespace core;
 
 class Database {
-    
+
     private $connection, $table, $select, $insert, $update, $join, $where, $group, $order, $limit;
-    
+
     public function __construct($connection) {
         $this -> connection = $connection;
     }
-    
+
     public function __set($name, $data) {
         call_user_func([$this,'set'.$name], $data);
     }
-    
+
     public function __get($name) {
         return call_user_func([$this,'get'.$name]);
     }
-    
+
     private function arrayType(array $array, string $type) : bool {
         foreach ($array as $v) {
             switch($type) {
@@ -27,7 +27,7 @@ class Database {
         }
         return true;
     }
-    
+
     private function formatToSqlStr($strorarray, bool $as = false, bool $return_array = false) {
         //lehet tömb vagy string, kulcsokat vagy táblát alakít át sql formában. első pont mentén aliasokra bont.
         $array = is_array($strorarray) ? $strorarray : [$strorarray];
@@ -50,7 +50,7 @@ class Database {
         $cafter = count($array);
         return ($cbefore === $cafter && $cafter > 0 && $walk) ? (($return_array) ? $array : implode(",", $array)) : false;
     }
-    
+
     private function valueFormatToSqlStr($strorarray, bool $return_array = false) {
         //lehet tömb vagy string, sql kompatibilis értékké alakít, hat tud.
         $array = is_array($strorarray) ? $strorarray : [$strorarray];
@@ -72,7 +72,7 @@ class Database {
         $cafter = count($array);
         return ($cbefore === $cafter && $cafter > 0 && $walk) ? (($return_array) ? $array : implode(",", $array)) : false;
     }
-    
+
     private function argumentArrayToStr(array $argument, bool $where = false) {
         $a = array_shift($argument);
         $b = array_shift($argument);
@@ -80,12 +80,13 @@ class Database {
         if (is_null($c)) { $c = $b; $b = '='; }
         if (preg_match("/\A\s*(not|in)\s*\z/i", $b, $m)) {
             $not = (strtolower($m[1]) === "not") ? " Not" : "";
-            return $this -> formatToSqlStr($a)."$not In(".$this -> valueFormatToSqlStr($c).")";
+			$v = $this -> valueFormatToSqlStr($c);
+            return $this -> formatToSqlStr($a)."$not In(".($v ? $v : "\"\"").")";
         } else {
             return $this -> formatToSqlStr($a)." $b ".(($where) ? $this -> valueFormatToSqlStr($c) : $this -> formatToSqlStr($c));
         }
     }
-    
+
     private function recursiveFormat(array $array, bool $where = false) : string {
         if ($this -> isArgument($array)) {
             return $this -> argumentArrayToStr($array, $where);
@@ -93,8 +94,8 @@ class Database {
         $return = [];
         foreach ($array as $k => $v) {
             if (is_string($v)) {
-                if (preg_match("/\A\s*(or|and)\s*\z/i", $v, $m) && 
-                    count($return) > 0 && 
+                if (preg_match("/\A\s*(or|and)\s*\z/i", $v, $m) &&
+                    count($return) > 0 &&
                     !preg_match("/\A\s*(or|and)\s*\z/i", end($return))) {
                     $return[] = ucfirst(strtolower($m[1]));
                 }
@@ -109,7 +110,7 @@ class Database {
         $return = array_filter($return);
         return count($return) > 0 ? implode(" ", $return) : "";
     }
-    
+
     private function isArgument(array $array) : bool {
         if (count($array) < 2) { return false; }
         $strtolower = function ($value) { return is_string($value) ? strtolower(trim($value , " \t\n\r\0\x0B'\"")) : $value; };
@@ -131,11 +132,11 @@ class Database {
             }
             */
         } else {
-            return false; 
+            return false;
         }
         return true;
     }
-    
+
     private function recursiveOrder(array $array) : string {
         $return = [];
         foreach ($array as $k => $v) {
@@ -149,13 +150,13 @@ class Database {
         }
         return implode(', ',$return);
     }
-    
+
     /* Table */
-    
+
     private function setDefaulttable(string $table) {
         $this -> setTable($table, true);
     }
-    
+
     private function setTable(string $table, bool $default = false) {
         if (is_string($table) && strlen($table) > 0) {
             if ($default) {
@@ -165,7 +166,7 @@ class Database {
             }
         }
     }
-    
+
     private function getTable() : string {
         $table = $this -> formatToSqlStr($this -> table['table'], true);
         $this -> table['table'] = null;
@@ -177,11 +178,11 @@ class Database {
         }
         return $table;
     }
-    
+
     /* /table */
-    
+
     /* Select */
-    
+
     private function setSelect($data) {
         if (count($data) === 1 && is_string(reset($data)) && (preg_match("/\A\s*select\s+/i", reset($data)) || reset($data) === '*')) {
             $this -> select = reset($data);
@@ -191,7 +192,7 @@ class Database {
             }
         }
     }
-    
+
     private function getSelect(array $array = null) {
         if (is_null($array)) {
             $array = $this -> select;
@@ -215,15 +216,15 @@ class Database {
         }
         return $return ?? null;
     }
-    
+
     /* /Select */
-    
+
     /* Insert */
-    
+
     private function setInsert(array $array) {
         $this -> insert = $array;
     }
-    
+
     private function getInsert() {
         $array = $this -> insert;
         $this -> insert = null;
@@ -256,15 +257,15 @@ class Database {
             }
         }
     }
-    
+
     /* /Insert */
-    
+
     /* Update */
-    
+
     private function setUpdate(array $update) {
         $this -> update = $update;
     }
-    
+
     private function getUpdate() : string {
         $update = $this -> update;
         $this -> update = null;
@@ -280,15 +281,15 @@ class Database {
         $return = array_filter($return);
         return (count($return) > 0) ? implode(",", $return) : die("Database update error: empty update values.");
     }
-    
+
     /* /Update */
-    
+
     /* Join */
-    
+
     private function setJoin(array $array) {
         $this -> join[reset($array)][] = end($array);
     }
-    
+
     private function getJoin() : array {
         $array = $this -> join ?? [];
         $this -> join = [];
@@ -303,60 +304,60 @@ class Database {
             }
         }
         return $return;
-    }   
-    
+    }
+
     /* /Join */
-    
+
     /* Where */
-    
+
     private function setWhere(array $array) {
         $this -> where = $array;
     }
-    
+
     private function getWhere() : string {
         $array = $this -> where ?? [];
         $this -> where = null;
         $where = $this -> recursiveFormat($array, true);
         return strlen($where) > 0 ? "Where $where" : "";
     }
-    
+
     /* /Where */
-    
+
     /* GroupBy */
-    
+
     private function setGroup(string $group) {
         $this -> group = $group;
     }
-    
+
     private function getGroup() : string {
         $group = $this -> group;
         $this -> group = null;
         return ($group) ? 'Group By '.$this -> formatToSqlStr($group) : '';
     }
-    
+
     /* /GroupBy */
-    
+
     /* OrderBy */
-    
+
     private function setOrder(array $order) {
         $this -> order = array_merge($this -> order ?? [], $order);
     }
-    
+
     private function getOrder() : string {
         $order = $this -> order;
         $this -> order = [];
         return ($order) ? 'Order By '.$this -> recursiveOrder($order) : '';
     }
-    
+
     /* /OrderBy */
-    
+
     /* Limit */
-    
+
     private function setLimit(array $limit) {
         $this -> limit['limit'] = reset($limit);
         $this -> limit['offset'] = end($limit);
     }
-    
+
     private function getLimit() : string {
         $limit = $this -> limit['limit'];
         $offset = $this -> limit['offset'];
@@ -367,7 +368,7 @@ class Database {
             return 'Limit '.$limit.(is_null($offset) ? '' : ' Offset '.$offset);
         }
     }
-    
+
     /* /Limit */
-    
+
 }

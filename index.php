@@ -162,8 +162,6 @@ function createFile(string $filename, string $content) {
 
 if (file_exists($app_config_file)) {
 	$app_config = require_once($app_config_file);
-} else {
-	createFile($app_config_file, "<?php\nreturn ".var_export($config, true).";");
 }
 
 if (file_exists($public_config_file)) {
