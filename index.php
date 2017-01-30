@@ -131,22 +131,23 @@ foreach ($dirs_check as $v) {
 }
 
 $config = [
-	'error_reporting'		=> true,
-	'default_timezone'		=> 'Europe/Budapest',
-	'default_language'		=> 'hu',
-	'default_controller'	=> 'welcome',
-	'default_method'		=> 'index',
-	'mysql_host'			=> null,
-	'mysql_username'		=> null,
-	'mysql_password'		=> null,
-	'mysql_database'		=> null,
-	'mysql_charset'			=> null,
-	'mysql_cache'			=> true,
-	'mysql_cache_time'		=> 3600, //1 hour
-	'default_cache_time'	=> 86400, //1 day
-	'default_cookie_time'	=> 86400, //1 day
-	'google_maps_api_key'	=> 'g00g13_k3y',
-	'secret_key'			=> 's3cr3t_k3y',
+	'error_reporting'			=> true,
+	'default_timezone'			=> "Europe/Budapest",
+	'default_language'			=> "hu",
+	'default_controller'		=> "welcome",
+	'default_method'			=> "index",
+	'mysql_host'				=> null,
+	'mysql_username'			=> null,
+	'mysql_password'			=> null,
+	'mysql_database'			=> null,
+	'mysql_charset'				=> null,
+	'mysql_cache'				=> true,
+	'mysql_cache_time'			=> 3600, //1 hour
+	'default_cache_time'		=> 86400, //1 day
+	'default_cookie_time'		=> 86400, //1 day
+	'google_maps_api_key'		=> null,
+	'openweathermap_api_key'	=> null,
+	'secret_key'				=> "s3cr3t_k3y",
 ];
 
 $public_config_file = APP_PUBLIC_DIR.DS.'config.php';

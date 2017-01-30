@@ -3,55 +3,41 @@ namespace helper;
 
 class Weather {
 
-    private $cache_helper;
+    private $api_key, $cache_helper;
 
-    public function __construct() {
-        $this -> cache_helper = Helper::cache([
-            'time' => '1800',
-            'dir' => 'weather'
-        ]);
-    }
+	public function __construct(array $data = []) {
+		$this -> api_key = $data['api_key'] ?? OPENWEATHERMAP_API_KEY;
+		if (!is_null($this -> api_key)) {
+			$this -> cache_helper = Helper::cache([
+				'time' => 60*30,
+				'dir' => "weather"
+			]);
+		}
+	}
 
-    public function get(string $location) : array {
-        if (!is_null($location) && !empty($location)) {
-			if ($result = $this -> cache_helper -> get($location)) {
-				return $result;
-			} else {
-				return $this -> set($location);
+	public function get(string $location) : array {
+		if (!is_null($this -> api_key)) {
+			if (!$return = $this -> cache_helper -> get($location)) {
+				$return = $this -> set($location);
 			}
-        } else {
-            return false;
-        }
-    }
+		} else {
+			$return = [];
+		}
+		return $return;
+	}
 
 	private function set(string $location) : array {
-		$url = "http://query.yahooapis.com/v1/public/yql";
-		if (!$return = $this -> cache_helper -> get($location)) {
-			if (!$woeid = $this -> cache_helper -> get($location."woeid")) {
-				$query = "select woeid from geo.places(1) where text=\"".$location."\"";
-				$query_url = $url.'?q='.urlencode($query).'&format=json';
-				$session = curl_init($query_url);
-				curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-				$json = json_decode(curl_exec($session), true);
-				$woeid = $json['query']['results']['place']['woeid'];
-				if (!is_null($woeid)) {
-					$this -> cache_helper -> set($location."woeid", $woeid, 60*60*24*30);
-				}
-			}
-			if (!is_null($woeid)) {
-				$query = "select item.condition from weather.forecast where woeid in ($woeid) and u=\"c\"";
-				$query_url = $url.'?q='.urlencode($query).'&format=json';
-				$session = curl_init($query_url);
-				curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-				$json = json_decode(curl_exec($session), true);
-				$return['code'] = $json['query']['results']['channel']['item']['condition']['code'];
-				$return['temp'] = $json['query']['results']['channel']['item']['condition']['temp'];
-				if (!is_null($return['code']) && !is_null($return['temp'])) {
-					$this -> cache_helper -> set($location, $return, 60*60);
-				}
-			}
+		$url = "http://api.openweathermap.org/data/2.5/weather?q=".urlencode($location)."&appid=".$this -> api_key."&units=metric";
+		$obj = json_decode(file_get_contents($url), true);
+		$return['day'] = substr($obj['weather'][0]['icon'], -1) === "n" ? "night" : "day";
+		$return['code'] = $obj['weather'][0]['id'];
+		$return['temp'] = round($obj['main']['temp']);
+		if (!empty($return['code']) && !empty($return['temp'])) {
+			$this -> cache_helper -> set($location, $return);
+			return $return;
+		} else {
+			return [];
 		}
-		return $return ?? null;
     }
 
 }
