@@ -27,10 +27,11 @@ class Weather {
 	}
 
 	private function set(string $location) : array {
-		$url = "http://api.openweathermap.org/data/2.5/weather?q=".urlencode($location)."&appid=".$this -> api_key."&units=metric";
+		$url = "http://api.openweathermap.org/data/2.5/weather?q=".urlencode($location)."&appid=".$this -> api_key."&units=metric&lang=".Router::language();
 		$obj = json_decode(file_get_contents($url), true);
 		$return['day'] = substr($obj['weather'][0]['icon'], -1) === "n" ? "night" : "day";
 		$return['code'] = $obj['weather'][0]['id'];
+		$return['description'] = $obj['weather'][0]['description'];
 		$return['temp'] = round($obj['main']['temp']);
 		if (!empty($return['code']) && !empty($return['temp'])) {
 			$this -> cache_helper -> set($location, $return);
