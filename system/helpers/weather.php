@@ -2,64 +2,56 @@
 namespace helper;
 
 class Weather {
-    
+
     private $cache_helper;
-    
+
     public function __construct() {
         $this -> cache_helper = Helper::cache([
             'time' => '1800',
             'dir' => 'weather'
         ]);
     }
-    
-    public function get($location) {
+
+    public function get(string $location) : array {
         if (!is_null($location) && !empty($location)) {
-            if ($result = $this -> db -> nocache() -> get('*', ['Where' => '`location` = "'.$location.'"'])) {
-                if (date('Y-m-d H:i:s', strtotime("+1 hour", strtotime($result['updated']))) < date('Y-m-d H:i:s')) {
-                    return $this -> set($location);
-                } else {
-                    unset($result['id']);
-                    unset($result['inserted']);
-                    unset($result['updated']);
-                    return array_filter($result);
-                }
-            } else {
-                return $this -> set($location);
-            }
+			if ($result = $this -> cache_helper -> get($location)) {
+				return $result;
+			} else {
+				return $this -> set($location);
+			}
         } else {
             return false;
         }
     }
-    
-    private function set($location) {
-        $url = "http://query.yahooapis.com/v1/public/yql";
-        $query = 'select item.condition from weather.forecast where woeid in (select woeid from geo.places(1) where text="'.$location.'") and u="c"';
-        $query_url = $url.'?q='.urlencode($query).'&format=json';
-        $session = curl_init($query_url);
-        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        $json = curl_exec($session);
-        $sql['location'] = $location;
-        $sql['code'] = json_decode($json, true)['query']['results']['channel']['item']['condition']['code'];
-        $sql['temp'] = json_decode($json, true)['query']['results']['channel']['item']['condition']['temp'];
-        $sql['updated'] = date('Y-m-d H:i:s');
-        if ($result = $this -> db -> nocache() -> get('*', ['Where' => '`location` = "'.$location.'"'])) {
-            if ($this -> db -> table('weather') -> update($sql, $result['id'])) {
-                unset($sql['updated']);
-                return $sql;
-            } else {
-                return false;
-            }
-        } else {
-            $sql['inserted'] = date('Y-m-d H:i:s');
-            if ($this -> db -> insert($sql)) {
-                
-                unset($sql['updated']);
-                unset($sql['inserted']);
-                return $sql;
-            } else {
-                return false;
-            }
-        }
+
+	private function set(string $location) : array {
+		$url = "http://query.yahooapis.com/v1/public/yql";
+		if (!$return = $this -> cache_helper -> get($location)) {
+			if (!$woeid = $this -> cache_helper -> get($location."woeid")) {
+				$query = "select woeid from geo.places(1) where text=\"".$location."\"";
+				$query_url = $url.'?q='.urlencode($query).'&format=json';
+				$session = curl_init($query_url);
+				curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+				$json = json_decode(curl_exec($session), true);
+				$woeid = $json['query']['results']['place']['woeid'];
+				if (!is_null($woeid)) {
+					$this -> cache_helper -> set($location."woeid", $woeid, 60*60*24*30);
+				}
+			}
+			if (!is_null($woeid)) {
+				$query = "select item.condition from weather.forecast where woeid in ($woeid) and u=\"c\"";
+				$query_url = $url.'?q='.urlencode($query).'&format=json';
+				$session = curl_init($query_url);
+				curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+				$json = json_decode(curl_exec($session), true);
+				$return['code'] = $json['query']['results']['channel']['item']['condition']['code'];
+				$return['temp'] = $json['query']['results']['channel']['item']['condition']['temp'];
+				if (!is_null($return['code']) && !is_null($return['temp'])) {
+					$this -> cache_helper -> set($location, $return, 60*60);
+				}
+			}
+		}
+		return $return ?? null;
     }
-    
+
 }

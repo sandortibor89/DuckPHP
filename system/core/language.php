@@ -2,16 +2,16 @@
 namespace core;
 
 class Language {
-    
+
     private static $instance, $text_helper, $languages, $language_keys;
-    
+
     private static function getInstance() : self {
 		if (is_null(self::$instance)) {
             self::$instance = new self();
-        }	
+        }
 		return self::$instance;
 	}
-    
+
     public function __construct() {
         $language_files = array_diff(scandir(APP_LANGUAGES_DIR), ['.', '..']);
         $public_language_files = array_diff(scandir(APP_PUBLIC_LANGUAGES_DIR), ['.', '..']);
@@ -31,11 +31,11 @@ class Language {
         define('LANGUAGE', ((empty($lang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2))) ? DEFAULT_LANGUAGE : ((in_array($lang, self::$languages['all'])) ? $lang : DEFAULT_LANGUAGE)));
         self::$text_helper = Helper::text();
     }
-    
+
     public static function init() {
         self::getInstance();
     }
-    
+
     private static function loadLanguageKeys() {
         if (empty(self::$language_keys)) {
             $language = Router::language();
@@ -46,11 +46,11 @@ class Language {
             self::$language_keys = array_replace_recursive($public_language_file, $language_file);
         }
     }
-    
+
     public static function getAll() : array {
         return self::$languages['all'];
     }
-    
+
     public static function get(string $key = null, bool $uc = false) : string {
         self::loadLanguageKeys();
         if (is_null($key) || empty($key)) {
@@ -61,15 +61,15 @@ class Language {
             for ($i = 0; $i<count($keys); $i++) {
                 $language_keys = $language_keys[$keys[$i]];
                 if (!empty($language_keys[$keys[$i]]) && !is_array($language_keys[$keys[$i]]) && $i == count($keys)-1) {
-                    $language_keys = $language_keys[$keys[$i]];
+                    $language_keys = is_array($language_keys) ? $language_keys[$keys[$i]] : $language_keys;
                 }
             }
             return (is_array($language_keys) || empty($language_keys)) ? "[$key]" : (($uc) ? self::$text_helper -> ucfirst($language_keys) : $language_keys);
         }
     }
-    
+
     public static function getUc(string $key = null) : string {
         return self::get($key, true);
     }
-    
+
 }
