@@ -7,7 +7,7 @@ class Currency {
 
 	public function __construct() {
 		$this -> cache_helper = Helper::cache([
-			'time' => 60*60,
+			'time' => 60*60*24,
 			'dir' => "currency"
 		]);
 	}
