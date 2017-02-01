@@ -3,7 +3,7 @@ namespace core;
 
 class Database {
 
-    private $connection, $table, $select, $insert, $update, $join, $where, $group, $order, $limit;
+    private $connection, $table, $select, $foundrows, $foundrowsvariable, $insert, $update, $join, $where, $group, $order, $limit;
 
     public function __construct($connection) {
         $this -> connection = $connection;

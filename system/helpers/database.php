@@ -2,9 +2,9 @@
 namespace helper;
 
 class Database extends DatabaseConnection {
-    
+
     private $core, $connection, $cache_helper, $mcache, $default, $query_data;
-    
+
     public function __construct(array $params = []) {
         $this -> default['cache'] = $params['cache'] ?? MYSQL_CACHE;
         $this -> default['cache_time'] = $params['cache_time'] ?? MYSQL_CACHE_TIME ?? DEFAULT_CACHE_TIME;
@@ -13,32 +13,32 @@ class Database extends DatabaseConnection {
         $this -> core = new \core\Database($this -> connection);
         $this -> defaulttable($params['table'] ?? '');
     }
-    
+
     private function execute(string $sql) {
 		$return = $this -> connection -> query($sql);
 		return ($this -> connection -> error) ? die("Mysql query error: ".$this -> connection -> error) : $return;
 	}
-    
+
     public function cache(int $time = null) : self {
         $this -> query_data['cache'] = true;
         $this -> query_data['cache_time'] = $time;
         return $this;
     }
-    
+
     public function nocache() : self {
         $this -> query_data['cache'] = false;
         return $this;
     }
-    
+
     public function select(...$args) : self {
         $this -> core -> select = $args;
         return $this;
     }
-    
+
     public function insertGetId(array $simple, array $multiple = null) {
         return $this -> insert($simple,$multiple,true);
     }
-    
+
     public function insert(array $simple, array $multiple = null, bool $getid = false) {
         $this -> core -> insert = [
             'simple' => $simple,
@@ -59,7 +59,7 @@ class Database extends DatabaseConnection {
         }
         return $return;
     }
-    
+
     public function update(array $update) : int {
         $this -> core -> update = $update;
         $table = $this -> core -> table;
@@ -69,61 +69,67 @@ class Database extends DatabaseConnection {
         $return = $this -> connection -> affected_rows;
         return $return;
     }
-    
+
     public function distinct() : self {
         $this -> query_data['distinct'] = true;
         return $this;
     }
-    
+
+    public function foundRows(&$rows) : self {
+		$this -> query_data['foundrows'] = ['found' => "SQL_CALC_FOUND_ROWS", 'memory' => &$rows];
+        return $this;
+    }
+
     public function defaulttable(string $table) : self {
         $this -> core -> defaulttable = $table;
         return $this;
     }
-    
+
     public function table(string $table) : self {
         $this -> core -> table = $table;
         return $this;
     }
-    
+
     public function join(string $table, array $on) : self {
         $this -> core -> join = [$table, $on];
         return $this;
     }
-    
+
     public function where(...$arguments) : self {
         $this -> core -> where = $arguments;
         return $this;
     }
-    
+
     public function group(string $by) : self {
         $this -> core -> group = $by;
         return $this;
     }
-    
+
     public function groupBy(string $by) : self {
         return $this -> group($by);
     }
-    
+
     public function order(...$arguments) : self {
         $this -> core -> order = $arguments;
         return $this;
     }
-    
+
     public function orderBy(...$arguments) : self {
         call_user_func_array(array($this, 'order'), $arguments);
         return $this;
     }
-    
+
     public function limit(int $limit = null, int $offset = null) : self {
         $this -> core -> limit = [$limit,$offset];
         return $this;
     }
-    
+
     public function sql(bool $all = false) : string {
         $select = $this -> core -> select;
         if (is_array($select)) {
             $table = $this -> core -> table;
             $sql[] = 'Select';
+            $sql[] = $this -> query_data['foundrows']['found'] ?? null;
             $sql[] = ($this -> query_data['distinct']) ? 'DISTINCT' : null;
             $sql[] = implode(',', $select);
             $sql[] = 'From';
@@ -141,14 +147,18 @@ class Database extends DatabaseConnection {
             $sql = (preg_match_all("/.*\Klimit\s+\d+\s*\z/i", $sql)) ? $sql : $sql." Limit 1";
             $sql = preg_replace("/.*\K(limit)\s+(\d+)/is", "$1 1", $sql);
         }
-        $this -> query_data = ['cache' => $this -> query_data['cache'],'cache_time' => $this -> query_data['cache_time']];
+        $this -> query_data = [
+			'cache' => $this -> query_data['cache'],
+			'cache_time' => $this -> query_data['cache_time'],
+			'foundrows' => $this -> query_data['foundrows']
+		];
         return $sql;
     }
-    
+
     public function sqlAll() : string {
         return $this -> sql(true);
     }
-    
+
     public function get(bool $all = false) {
         $sql = $this -> sql($all);
         $cache = $this -> query_data['cache'] ?? $this -> default['cache'];
@@ -156,19 +166,34 @@ class Database extends DatabaseConnection {
             $cache_key = md5($sql);
             $cache_time = $this -> query_data['cache_time'] ?? $this -> default['cache_time'];
         }
+
         if (!is_null($this -> mcache) && array_key_exists($cache_key, $this -> mcache) && $cache) {
             $result_array = $this -> mcache[$cache_key];
+			if (array_key_exists($cache_key."rows", $this -> mcache)) {
+				$this -> query_data['foundrows']['memory'] = $this -> mcache[$cache_key."rows"];
+			}
         } else {
             $cache_data = ($cache) ? $this -> cache_helper -> get($cache_key) : null;
             if (!is_null($cache_data) && $cache) {
+				$rows = $this -> cache_helper -> get($cache_key."rows") ?? null;
+				$this -> query_data['foundrows']['memory'] = $rows;
+				if (!is_null($rows)) {
+					$this -> mcache[$cache_key."rows"] = $rows;
+				}
                 $result_array = $cache_data;
                 $this -> mcache[$cache_key] = $result_array;
             } else {
                 if ($result = $this -> execute($sql)) {
+					$foundrows = reset($this -> execute("SELECT FOUND_ROWS()") -> fetch_array(MYSQLI_ASSOC));
+					$this -> query_data['foundrows']['memory'] = $foundrows;
                     while ($row = $result -> fetch_array(MYSQLI_ASSOC)) {
                         $result_array[] = $row;
                     }
                     if ($cache) {
+						if ($foundrows) {
+							$this -> mcache[$cache_key."rows"] = $foundrows;
+	                        $this -> cache_helper -> set($cache_key."rows", $foundrows, $cache_time);
+						}
                         $this -> mcache[$cache_key] = $result_array;
                         $this -> cache_helper -> set($cache_key, $result_array, $cache_time);
                     }
@@ -176,11 +201,12 @@ class Database extends DatabaseConnection {
                 $result_array = $result_array ?? [];
             }
         }
+		$this -> query_data = null;
         return ($all) ? $result_array : (($result_array) ? ((count($r = reset($result_array)) === 1) ? reset($r) : $r) : $result_array);
     }
-    
+
     public function getAll() {
         return $this -> get(true);
     }
-    
+
 }
