@@ -200,7 +200,7 @@ spl_autoload_register(function ($class) {
 $class_alias = [
 	'core' => [
 		'Router'				=> ['Router','helper','model','controller'],
-		'Language'				=> 'model',
+		'Language'				=> ['model','controller'],
 		'Helper'				=> ['helper','controller','publicmodel','model'],
 		'Controller'			=> 'controller',
 		'Publicmodel'			=> ['publicmodel','model','controller'],
