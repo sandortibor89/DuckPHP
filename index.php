@@ -168,13 +168,7 @@ if (file_exists($app_config_file)) {
 if (file_exists($public_config_file)) {
 	$public_config = require_once($public_config_file);
 } else {
-	createFile($public_config_file, "<?php\nreturn ".var_export($config, true).";\n?>");
-}
-
-$all_controller_load_file = APP_SUB_DIR.DS.'all_controller_load.php';
-
-if (!file_exists($all_controller_load_file)) {
-	createFile($all_controller_load_file, "<?php\nnamespace controller;\n//code here\nreturn [];\n?>");
+	createFile($public_config_file, "<?php\nreturn ".var_export($config, true).";");
 }
 
 if (is_array($public_config) && count($public_config) > 0)	{ $config = array_merge($config, $public_config); }
@@ -205,7 +199,7 @@ spl_autoload_register(function ($class) {
 
 $class_alias = [
 	'core' => [
-		'Router'				=> ['Router','helper','model','publicmodel','controller'],
+		'Router'				=> ['Router','helper','model','controller'],
 		'Language'				=> ['model','controller'],
 		'Helper'				=> ['helper','controller','publicmodel','model'],
 		'Controller'			=> 'controller',
