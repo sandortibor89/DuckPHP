@@ -15,7 +15,6 @@ if (class_exists('\model\Authentication')) {
             } elseif (file_exists(APP_SUB_DIR.DS.'all_controller_load.php')) {
 				$this -> loaded = require_once(APP_SUB_DIR.DS.'all_controller_load.php');
 			}
-			echo 'ok';
         }
     }
 } else {
