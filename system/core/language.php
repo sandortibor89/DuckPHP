@@ -59,7 +59,11 @@ class Language {
             $keys = explode('.', $key);
             $language_keys = self::$language_keys;
             for ($i = 0; $i<count($keys); $i++) {
-                $language_keys = $language_keys[$keys[$i]];
+				if (is_array($language_keys) && array_key_exists($keys[$i], $language_keys)) {
+					$language_keys = $language_keys[$keys[$i]];
+				} else {
+					$language_keys = null;
+				}
                 if (!empty($language_keys[$keys[$i]]) && !is_array($language_keys[$keys[$i]]) && $i == count($keys)-1) {
                     $language_keys = is_array($language_keys) ? $language_keys[$keys[$i]] : $language_keys;
                 }
