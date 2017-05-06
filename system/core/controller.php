@@ -1,18 +1,12 @@
 <?php
 namespace core;
 
-if (class_exists('\model\Authentication')) {
-	class Auth extends \model\Authentication { }
-} else {
-	class Auth { }
-}
-
-class Controller extends Auth {
+class Controller extends Authentication {
 
 	protected $loaded;
 
 	public function __construct() {
-		parent::__construct();
+		parent::init();
 		$backup = Router::get()['mysqlbackup'];
 		if ($backup == 1) {
 			$filename='database_backup_'.MYSQL_DATABASE.'_'.date('Y_m_d_H_i_s').'.sql';
@@ -22,4 +16,11 @@ class Controller extends Auth {
 			$this -> loaded = require_once(APP_SUB_DIR.DS.'all_controller_load.php');
 		}
 	}
+
+	public function __get($name) {
+		if ($name === 'global') {
+			return parent::init();
+		}
+	}
 }
+?>

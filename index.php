@@ -208,7 +208,6 @@ $class_alias = [
 		'Router'				=> ['Router','helper','model','publicmodel','controller'],
 		'Language'				=> ['model','controller'],
 		'Helper'				=> ['helper','controller','publicmodel','model'],
-		'Controller'			=> 'controller',
 		'Publicmodel'			=> ['publicmodel','model','controller'],
 		'Model'					=> ['model','controller'],
 		'View'					=> 'controller',
