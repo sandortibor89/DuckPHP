@@ -14,5 +14,4 @@ return [
 	'sandortibor.dev' => 'sandortibor.hu',
 	'kissszilard.dev' => 'kissszilard.hu',
 	'wine-tour.dev' => 'wine-tour.hu',
-	'hazifeladat.dev' => 'hazifeladat.hu',
 ];
