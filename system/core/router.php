@@ -66,7 +66,7 @@ class Router {
 			return self::init();
         } else {
 			$file = fopen($controller, "w") or die("Unable to open file!");
-			fwrite($file, "<?php\nnamespace controller;\n\nclass Welcome extends controller {\n\n\tpublic function index() {\n\t\tRouter::info(true);\n\t}\n\n}");
+			fwrite($file, "<?php\nnamespace controller;\n\nclass Welcome extends \core\controller {\n\n\tpublic function index() {\n\t\tRouter::info(true);\n\t}\n\n}");
 			fclose($file);
             return self::init();
         }
