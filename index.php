@@ -1,8 +1,8 @@
 <?php
 /* Framework */
 /* by Tibor Sándor */
-
 define('FW_PHP_VERSION', '7.1');
+
 
 if (version_compare(PHP_VERSION, FW_PHP_VERSION, '<')) {
 	die('Upgrade your PHP version ('.PHP_VERSION.') to '.FW_PHP_VERSION.' or newer!');
